@@ -2,6 +2,23 @@
   "table": {
     "name": "example_table",
     "description": "Example table for schema metaprogramming tool",
+    "endpoints": {
+      "GET": {
+        "enabled": true,
+        "pagination": true,
+        "defaultSort": "created_on DESC",
+        "defaultLimit": 20
+      },
+      "POST": {
+        "enabled": true
+      },
+      "PUT": {
+        "enabled": true
+      },
+      "DELETE": {
+        "enabled": true
+      }
+    },
     "columns": [
       {
         "name": "example_id",
@@ -21,7 +38,18 @@
         "query": {
           "select": true,
           "filter": true,
-          "sort": true
+          "sort": true,
+          "search": false
+        },
+        "operations": {
+          "create": false,
+          "update": false,
+          "delete": false,
+          "get": true,
+          "getAll": true
+        },
+        "validation": {
+          "required": false
         }
       },
       {
@@ -37,8 +65,21 @@
         "query": {
           "select": true,
           "filter": true,
-          "sort": false,
+          "sort": true,
           "search": true
+        },
+        "operations": {
+          "create": true,
+          "update": true,
+          "delete": false,
+          "get": true,
+          "getAll": true
+        },
+        "validation": {
+          "required": true,
+          "minLength": 1,
+          "maxLength": 255,
+          "pattern": null
         }
       },
       {
@@ -52,8 +93,20 @@
         },
         "query": {
           "select": true,
-          "filter": false,
-          "sort": true
+          "filter": true,
+          "sort": true,
+          "search": false
+        },
+        "operations": {
+          "create": false,
+          "update": false,
+          "delete": false,
+          "get": true,
+          "getAll": true
+        },
+        "validation": {
+          "required": false,
+          "autoSet": "now"
         }
       },
       {
@@ -68,7 +121,19 @@
         "query": {
           "select": true,
           "filter": false,
-          "sort": false
+          "sort": false,
+          "search": false
+        },
+        "operations": {
+          "create": true,
+          "update": true,
+          "delete": false,
+          "get": true,
+          "getAll": true
+        },
+        "validation": {
+          "required": false,
+          "jsonSchema": null
         },
         "json_data": {
           "color": {
@@ -100,66 +165,11 @@
             "nullable": false,
             "unique": true,
             "index": true,
-            "hidden": true,
-            "default": null,
-            "foo": {
-              "type": "bool",
-              "nullable": false,
-              "unique": true,
-              "index": true,
-              "hidden": false,
-              "default": null
-            },
-            "baz": {
-              "type": "[integer]",
-              "nullable": false,
-              "unique": true,
-              "index": true,
-              "hidden": false,
-              "default": null
-            },
-            "bar": {
-              "type": "object",
-              "nullable": false,
-              "unique": true,
-              "index": true,
-              "hidden": false,
-              "default": null,
-              "nested": {
-                "type": "string",
-                "nullable": false,
-                "unique": true,
-                "index": true,
-                "hidden": false,
-                "default": null
-              }
-            }
+            "hidden": false,
+            "default": null
           }
         }
       }
     ]
-  },
-  "crud": [
-    {
-      "operation": "post",
-      "endpoint": "/example_table",
-      "auth_required": false
-    },
-    {
-      "operation": "get",
-      "endpoint": "/example_table/{example_id}",
-      "auth_required": false,
-      "by": "id"
-    },
-    {
-      "operation": "put",
-      "endpoint": "/example_table/{example_id}",
-      "auth_required": false
-    },
-    {
-      "operation": "delete",
-      "endpoint": "/example_table/{example_id}",
-      "auth_required": false
-    }
-  ]
+  }
 }

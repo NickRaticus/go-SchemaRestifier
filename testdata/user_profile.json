@@ -2,6 +2,23 @@
   "table": {
     "name": "user_profile",
     "description": "User profile table for schema metaprogramming tool",
+    "endpoints": {
+      "GET": {
+        "enabled": true,
+        "pagination": true,
+        "defaultSort": "user_id DESC",
+        "defaultLimit": 50
+      },
+      "POST": {
+        "enabled": true
+      },
+      "PUT": {
+        "enabled": true
+      },
+      "DELETE": {
+        "enabled": true
+      }
+    },
     "columns": [
       {
         "name": "user_id",
@@ -17,7 +34,18 @@
         "query": {
           "select": true,
           "filter": true,
-          "sort": true
+          "sort": true,
+          "search": false
+        },
+        "operations": {
+          "create": false,
+          "update": false,
+          "delete": false,
+          "get": true,
+          "getAll": true
+        },
+        "validation": {
+          "required": false
         }
       },
       {
@@ -33,8 +61,21 @@
         "query": {
           "select": true,
           "filter": true,
-          "sort": false,
+          "sort": true,
           "search": true
+        },
+        "operations": {
+          "create": true,
+          "update": true,
+          "delete": false,
+          "get": true,
+          "getAll": true
+        },
+        "validation": {
+          "required": true,
+          "minLength": 3,
+          "maxLength": 100,
+          "pattern": "^[a-zA-Z0-9_]+$"
         }
       },
       {
@@ -49,7 +90,19 @@
         "query": {
           "select": true,
           "filter": false,
-          "sort": false
+          "sort": false,
+          "search": false
+        },
+        "operations": {
+          "create": true,
+          "update": true,
+          "delete": false,
+          "get": true,
+          "getAll": true
+        },
+        "validation": {
+          "required": false,
+          "jsonSchema": null
         },
         "json_data": {
           "bio": {
@@ -107,96 +160,9 @@
                 "default": null
               }
             }
-          },
-          "tags": {
-            "type": "[string]",
-            "nullable": false,
-            "unique": false,
-            "index": false,
-            "hidden": false,
-            "default": null
-          },
-          "extra": {
-            "type": "object",
-            "nullable": false,
-            "unique": false,
-            "index": false,
-            "hidden": true,
-            "default": null,
-            "is_verified": {
-              "type": "bool",
-              "nullable": false,
-              "unique": false,
-              "index": false,
-              "hidden": false,
-              "default": null
-            },
-            "score": {
-              "type": "integer",
-              "nullable": false,
-              "unique": false,
-              "index": false,
-              "hidden": false,
-              "default": null
-            },
-            "details": {
-              "type": "object",
-              "nullable": false,
-              "unique": false,
-              "index": false,
-              "hidden": true,
-              "default": null,
-              "nested": {
-                "type": "string",
-                "nullable": false,
-                "unique": false,
-                "index": false,
-                "hidden": false,
-                "default": null
-              }
-            }
           }
-        }
-      },
-      {
-        "name": "created_at",
-        "type": "timestamp",
-        "nullable": false,
-        "struct": {
-          "field_name": "CreatedAt",
-          "field_type": "datetime",
-          "json_tag": "created_at"
-        },
-        "query": {
-          "select": true,
-          "filter": false,
-          "sort": true
         }
       }
     ]
-  },
-  "crud": [
-    {
-      "operation": "post",
-      "endpoint": "/user_profile",
-      "auth_required": true
-    },
-    {
-      "operation": "get",
-      "endpoint": "/user_profile",
-      "auth_required": true,
-      "list_supported": true,
-      "single_supported": true
-    },
-    {
-      "operation": "put",
-      "endpoint": "/user_profile/{user_id}",
-      "auth_required": true
-    },
-    {
-      "operation": "delete",
-      "endpoint": "/user_profile/{user_id}",
-      "auth_required": true
-    }
-  ]
+  }
 }

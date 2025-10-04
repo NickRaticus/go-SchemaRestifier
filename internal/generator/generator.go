@@ -36,6 +36,10 @@ func (g *Generator) GeneratorMain() error {
 	if err != nil {
 		return fmt.Errorf("failed to generate go.mod: %w", err)
 	}
+	err = g.GenerateRepoLayer()
+	if err != nil {
+		return fmt.Errorf("failed to generate repo layer: %w", err)
+	}
 	return nil
 
 	//TODO: Create function to generate the API controller layer which uses a object instance to make controllers for the api routes. Using Mux router.
@@ -52,32 +56,70 @@ func (g *Generator) GenerateRunner() error {
 	exists, err := checkFileExists(g.FilePath + "/runner.go")
 	filePath := g.FilePath + "/runner.go"
 
-	import_content := "package main \n\nimport (\n\t\"fmt\"\n\"net/http\"\n"
-	contents := "\n\nfunc main() {\n\n\tmux := http.NewServeMux()\n"
+	importContent := "package main\n\nimport (\n\t\"fmt\"\n\t\"net/http\"\n\t\"github.com/jmoiron/sqlx\"\n\t\"github.com/lib/pq\"\n\t\"go.uber.org/dig\"\n"
+	provideContent := "\tcontainer := dig.New()\n\n\tcontainer.Provide(func() (*sqlx.DB, error) {\n\t\treturn sqlx.Connect(\"postgres\", \"user=youruser dbname=yourdb sslmode=disable\")\n\t})\n"
+	invokeParams := ""
+
+	routeInit := ""
+
 	if err != nil {
 		return fmt.Errorf("failed to check if file exists %s: %w", filePath, err)
 	}
 	if exists {
-		// TODO: add handling for existing file
 		fmt.Printf("File %s already exists, skipping generation.\n", filePath)
 		return nil
 	}
+
 	for _, tableName := range g.TableNames {
-		fmt.Printf("Generating runner/api-routing for table: %s\n", tableName)
-		import_content += fmt.Sprintf("\t\"%s/controller/%s\"\n", g.APIName, tableName)
-		contents += fmt.Sprintf("\n\t%s.RegisterRoutes(mux)\n", tableName)
-
+		camelName := strcase.ToCamel(tableName)
+		importContent += fmt.Sprintf("\t\"%s/controller/%s\"\n", g.APIName, tableName)
+		provideContent += fmt.Sprintf("\tcontainer.Provide(repository.New%sRepository)\n", camelName)
+		provideContent += fmt.Sprintf("\tcontainer.Provide(%s.New%sController)\n", tableName, camelName)
+		invokeParams += fmt.Sprintf("%sController *%s.%sController, ", tableName, tableName, camelName)
+		routeInit += fmt.Sprintf("\t\t%s.RegisterRoutes(mux, %sController)\n", tableName, tableName)
 	}
-	import_content += ")\n"
-	contents = import_content + contents
-	contents += "\n\tfmt.Println(\"Server is running on port 8080\")\n\thttp.ListenAndServe(\":8080\", mux)\n}\n"
+	importContent += fmt.Sprintf("\t\"%s/repository\"\n", g.APIName)
+	importContent += ")\n"
 
-	err = writeFile(filePath, []byte(contents))
+	// Remove trailing comma and space from invokeParams
+	if len(invokeParams) > 2 {
+		invokeParams = invokeParams[:len(invokeParams)-2]
+	}
+
+	mainContent := importContent
+	mainContent += "\nfunc main() {\n"
+	mainContent += provideContent
+	mainContent += "\n\terr := container.Invoke(func(" + invokeParams + ") {\n"
+	mainContent += "\t\tmux := http.NewServeMux()\n"
+	mainContent += routeInit
+	mainContent += "\t\tfmt.Println(\"Server is running on port 8080\")\n\t\thttp.ListenAndServe(\":8080\", mux)\n\t})\n"
+	mainContent += "\tif err != nil {\n\t\tpanic(err)\n\t}\n"
+	mainContent += "}\n"
+
+	err = writeFile(filePath, []byte(mainContent))
 	if err != nil {
 		return err
 	}
-
 	return nil
+}
+
+func (g *Generator) GenerateRepoLayer() error {
+	//update this to use a DI approach with *sqlx.DB instance passed to the repository struct,
+	//	// so there's a factory method to create a new repository with the db instance for each repo(per table).
+
+	for _, schema := range g.Schemas {
+		repoContent := fmt.Sprintf("package repository\n\nimport (\n\t\"github.com/jmoiron/sqlx\"\n\t\"%s/model\"\n)\n\ntype %sRepository struct {\n\tDB *sqlx.DB\n}\n\nfunc New%sRepository(db *sqlx.DB) *%sRepository {\n\treturn &%sRepository{DB: db}\n}\n", g.APIName, strcase.ToCamel(schema.Name), strcase.ToCamel(schema.Name), strcase.ToCamel(schema.Name), strcase.ToCamel(schema.Name))
+		err := writeFile(g.FilePath+"/repository/"+schema.Name+"_repository.go", []byte(repoContent))
+		if err != nil {
+			return fmt.Errorf("failed to write file %s: %w", g.FilePath+""+schema.Name+"_repository.go", err)
+		}
+		for _, column := range *schema.Columns {
+
+		}
+
+	}
+	return nil
+
 }
 
 func (g *Generator) GenerateGoMod() error {

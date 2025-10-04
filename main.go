@@ -11,29 +11,40 @@ import (
 type APIName string
 type FilePath string
 
-func NewGenerator(apiName APIName, schemas []parser.Schema, Filepath FilePath) *generator.Generator {
+func NewGenerator(apiName APIName, schemas []parser.Schema, Filepath FilePath, Tablenames []string) *generator.Generator {
 	return &generator.Generator{
-		APIName:  string(apiName),
-		Schemas:  schemas,
-		FilePath: string(Filepath),
+		APIName:    string(apiName),
+		Schemas:    schemas,
+		FilePath:   string(Filepath),
+		TableNames: Tablenames,
 	}
 }
 
 func main() {
 
 	container := dig.New()
+	tablenames := new([]string)
 
 	// Provide the parsed schema data to the container
 	err := container.Provide(func() ([]parser.Schema, error) {
-		return parser.ParseSchema("testdata/")
+		parse, err := parser.ParseSchema("testdata/")
+		if err != nil {
+			return nil, err
+		}
+		for _, table := range parse {
+			*tablenames = append(*tablenames, table.Name)
+		}
+
+		return parse, nil
 	})
 	if err != nil {
 		fmt.Println("Error providing schema data:", err)
 		return
 	}
-	// Provide metadata like api name
+	err = container.Provide(func() []string {
+		return *tablenames
+	})
 
-	// Provide metadata like api name
 	err = container.Provide(func() APIName {
 		return "SampleAPI"
 	})
@@ -42,7 +53,7 @@ func main() {
 		return
 	}
 	err = container.Provide(func() FilePath {
-		return "/output"
+		return "C:\\Users\\Nikla\\GolandProjects\\go-SchemaRestifier\\output"
 	})
 	if err != nil {
 		fmt.Println("Error providing file path:", err)
